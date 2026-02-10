@@ -1,0 +1,18 @@
+
+# 源数据文件路径
+source_data_paths:
+  source_data: data/source_data/source_data_public.json
+  
+
+# 评估集路径（有答案）
+llm_eval4_data_paths:
+  final_diagnosis_eval: data/llm_eval_data/eval_data/final_public_diagnosis_eval.json
+
+# 大模型回答目录
+llms_answers_data_base_dir: data/llms_answers_data
+
+# 评估结果输出目录
+output_paths:
+  llms_evaluation_results: results/llms_evaluation_results
+
+

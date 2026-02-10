@@ -1,0 +1,6 @@
+# Core dependencies
+PyYAML>=6.0
+requests>=2.31
+
+# Data conversion utility (用于 Excel -> JSON 转换脚本)
+pandas>=2.0

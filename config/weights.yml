@@ -1,0 +1,19 @@
+# ==========================================
+# 权重配置 (Weights Configuration)
+# 用于 summarize_diag_metrics 函数计算 Score_diag
+# ==========================================
+# 最终诊断综合权重（子指标，仅保留三项）
+# 注意：若使用了 evaluate_ranked_diagnoses (多诊断排序评估)，
+# 则 Score_diag 直接采用 final_score，此时 c1/c2/c3 仅作参考或备用。
+c1: 0.40       # Accuracy (Top-1): 模型Top-1预测是否命中主要诊断
+c2: 0.30       # MRR (Mean Reciprocal Rank): 正确诊断在模型预测列表中的倒数排名均值
+c3: 0.30       # User Defined Score (weighted_semantic_mean): 语义相似度加权平均分
+
+# ==========================================
+# 多诊断排序评估参数 (Ranked Multi-Diagnosis)
+# 用于 evaluate_ranked_diagnoses 函数
+# ==========================================
+ndcg_k: 10          # nDCG 计算截断值 K，只关注前 K 个预测
+ndcg_lambda: 0.7    # nDCG 指数衰减参数，控制金标准排名的重要性权重 exp(-lambda * (rank-1))
+rel_threshold: 0.7  # 相关性阈值，相似度大于此值才被视为命中 (Hit)
+precision_beta: 0.7 # Final Score 中 Precision 的指数权重，控制精确率对总分的影响力度
