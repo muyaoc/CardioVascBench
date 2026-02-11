@@ -252,7 +252,7 @@ Generated in three versions:
 
 ---
 
-## 8. Medical Graph RAG Agent (agent/)
+## Medical Graph RAG Agent (agent/)
 
 This module provides Medical Knowledge Graph RAG capabilities based on **Neo4j + Vector Retrieval**, supporting an OpenAI-compatible interface.
 

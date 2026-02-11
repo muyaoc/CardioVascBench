@@ -365,7 +365,7 @@ Score_total = gamma * Score_diag
   - 固定 `weights.yml` 与评估数据版本；
 ---
 
-## 8. Medical Graph RAG Agent (agent/)
+## Medical Graph RAG Agent (agent/)
 
 该模块提供基于 **Neo4j + 向量检索** 的医学知识图谱 RAG 能力，支持 OpenAI 兼容接口。
 
