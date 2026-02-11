@@ -2,6 +2,8 @@
 
 面向心脑血管疾病场景的中文评测基准。依据真实心内科数据（如 `data/source_data/source_data.json`）构建评估集，输入病历文书与心电检查相关信息，评估待测大语言模型的“最终诊断”能力与一致性。
 
+**数据下载 (Data Download)**：[CardioVascBench 数据集 (OpenI 启智社区)](https://openi.pcl.ac.cn/explore/datasets/cindyc/CardioVascBench)
+
 本 README 面向**内部使用者与开发者**，重点说明：
 
 - 评测流程与数据流向；

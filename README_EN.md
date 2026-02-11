@@ -2,6 +2,8 @@
 
 A Chinese evaluation benchmark oriented towards cardiovascular disease scenarios. Built on real cardiology data (e.g., `data/source_data/source_data.json`), it evaluates the "final diagnosis" capability and consistency of Large Language Models (LLMs) by inputting medical records and ECG-related information.
 
+**Data Download**: [CardioVascBench Dataset (OpenI)](https://openi.pcl.ac.cn/explore/datasets/cindyc/CardioVascBench)
+
 This README is intended for **internal users and developers**, focusing on:
 
 - Evaluation workflow and data flow;
