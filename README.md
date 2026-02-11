@@ -25,9 +25,11 @@ Code/
 │   └── llms_answers_data_generator.py # 生成模型答案的脚本
 ├── src/
 │   ├── core_evaluator.py         # 核心评测算法（归一化 / 匹配 / 各类指标）
-│   └── evaluate_llm.py           # 评估待测 LLM（读取配置，调度 core_evaluator，写出 JSON & 图）
+│   └── evaluate_llm.py           # 评估待测 LLM（读取配置，脚本调度）
+├── agent/                        # [新增] 图谱 RAG Agent 模块 (FastAPI 服务)
+├── requirements.txt              # 项目依赖
 └── results/
-    └── llms_evaluation_results/  # [输出] LLM 评测结果（JSON / PNG / CSV）
+    └── llms_evaluation_results/  # [输出] LLM 评测结果 (JSON / PNG / CSV)
     
 ```
 
@@ -359,5 +361,28 @@ Score_total = gamma * Score_diag
 - 路径问题：优先通过修改 `config/paths.yml` 适配本地目录，而非改动代码；
 - 评测复现性：
   - 固定 `weights.yml` 与评估数据版本；
-  - 保留输出 JSON 与 CSV 以便后续对比；
-  - 若调整 `SEM_POS/SEM_STRICT/SEM_LOOSE` 等环境变量，请在实验记录中注明。
+---
+
+## 8. Medical Graph RAG Agent (agent/)
+
+该模块提供基于 **Neo4j + 向量检索** 的医学知识图谱 RAG 能力，支持 OpenAI 兼容接口。
+
+### 8.1 核心功能
+- **OpenAI 兼容**：通过 `POST /v1/chat/completions` 无缝集成。
+- **混合检索**：并行执行向量相似度检索与 Cypher 图谱检索（`mode=hybrid`）。
+- **自动化建图**：提供接口将 Markdown 文本自动切分并抽取实体、关系存入 Neo4j。
+
+### 8.2 快速运行
+```bash
+cd agent
+pip install -r requirements.txt
+python server.py
+```
+默认地址：`http://127.0.0.1:8801`，健康检查：`/api/health`。
+
+### 8.3 主要接口
+- `POST /v1/chat/completions`：RAG 问答（OpenAI 格式）。
+- `POST /api/query`：自定义检索问答。
+- `POST /api/admin/ingest`：文档入库（建图与向量化）。
+
+更多细节请参考 [agent/README.md](file:///e:/mychen/CVDBenchmark-OpenSource/Code/agent/README.md)。
