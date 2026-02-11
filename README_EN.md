@@ -1,4 +1,4 @@
-# ECGbenchmark Cardiovascular Disease Large Model Evaluation Benchmark
+# CardioVascBench Cardiovascular Disease Large Model Evaluation Benchmark
 
 A Chinese evaluation benchmark oriented towards cardiovascular disease scenarios. Built on real cardiology data (e.g., `data/source_data/source_data.json`), it evaluates the "final diagnosis" capability and consistency of Large Language Models (LLMs) by inputting medical records and ECG-related information.
 

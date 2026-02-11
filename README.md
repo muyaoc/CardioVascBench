@@ -1,4 +1,4 @@
-# ECGbenchmark 心脑血管疾病大模型评测基准
+# CardioVascBench 心脑血管疾病大模型评测基准
 
 面向心脑血管疾病场景的中文评测基准。依据真实心内科数据（如 `data/source_data/source_data.json`）构建评估集，输入病历文书与心电检查相关信息，评估待测大语言模型的“最终诊断”能力与一致性。
 
