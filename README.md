@@ -102,9 +102,8 @@ api_key: YOUR_API_KEY   # 可留空，评估阶段不会访问
 ### 3.1 快速开始（已有人生成好答案的场景）
 
 ```bash
-cd ECGbenchmark
-
 # 如需先生成某个模型的回答（示意）
+# 默认使用 --model-cfg config/eval_llm_api.yml --paths-cfg config/paths.yml
 python data/llms_answers_data_generator.py
 
 # 对单个模型进行评估（默认 strategy=semantic, auc_alias=pr）

@@ -96,6 +96,7 @@ The overall process is divided into three steps:
 cd Code
 
 # Generate answers for a model (example)
+# Defaults to --model-cfg config/eval_llm_api.yml --paths-cfg config/paths.yml
 python data/llms_answers_data_generator.py
 
 # Evaluate a single model (default strategy=semantic, auc_alias=pr)

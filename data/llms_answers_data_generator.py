@@ -649,8 +649,8 @@ def call_chat(
 # ---------- main ----------
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model-cfg", required=True, help="Path to model YAML (contains both config and template)")
-    ap.add_argument("--paths-cfg", required=True, help="Path to paths.yml")
+    ap.add_argument("--model-cfg", default="config/eval_llm_api.yml", required=False, help="Path to model YAML (default: %(default)s)")
+    ap.add_argument("--paths-cfg", default="config/paths.yml", required=False, help="Path to paths.yml (default: %(default)s)")
     args = ap.parse_args()
 
     # API from environment (set by the .sh)
