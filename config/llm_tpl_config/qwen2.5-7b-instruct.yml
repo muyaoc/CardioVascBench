@@ -1,0 +1,18 @@
+model_name: "Qwen2.5-7B-Instruct"
+endpoint: "chat"
+use_client_templates: false
+
+# Qwen/Qwen-VL style templates generally support system role well.
+supports_system_role: true
+
+# Keep off unless you have verified your vLLM build supports response_format for chat AND the model follows it.
+json_mode: false
+
+# Usually not necessary for /v1/chat/completions.
+stops: []
+
+max_tokens: 512
+temperature: 0.0
+timeout_seconds: 90
+max_retries: 3
+backoff_seconds: 1.0

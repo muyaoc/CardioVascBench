@@ -13,7 +13,7 @@
 ## 目录结构
 
 - `source_data/`: 包含原始生成的病例数据（如 `source_data/source_data_public.json`）。
-- `llm_eval_data/`: 包含经过清洗和标准化的评估集数据（如 `eval_data/final_public_diagnosis_eval.json`）。
+- `llm_eval_data/`: 包含经过清洗和标准化的评估集数据（如 `eval_data/public_diagnosis_eval.json`）。
 - `llms_answers_data/`: 用于存放各个待测大模型生成的诊断回答。
 - `llms_answers_data_generator.py`: 用于调用模型 API 并生成回答数据的脚本。
 

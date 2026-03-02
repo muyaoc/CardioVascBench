@@ -1,37 +1,33 @@
-# CardioVascBench Cardiovascular Disease Large Model Evaluation Benchmark
+# CardioVascBench: CardioVascBench Cardiovascular Disease Large Model Evaluation Benchmark
 
-A Chinese evaluation benchmark oriented towards cardiovascular disease scenarios. Built on real cardiology data (e.g., `data/source_data/source_data.json`), it evaluates the "final diagnosis" capability and consistency of Large Language Models (LLMs) by inputting medical records and ECG-related information.
+A Chinese evaluation benchmark oriented towards cardiovascular disease scenarios. Built on real cardiology data, it evaluates the "final diagnosis" capability and consistency of Large Language Models (LLMs).
 
 **Data Download**: [CardioVascBench Dataset (OpenI)](https://openi.pcl.ac.cn/explore/datasets/cindyc/CardioVascBench)
 
-This README is intended for **internal users and developers**, focusing on:
-
-- Evaluation workflow and data flow;
-- Diagnosis matching and normalization algorithm details;
-- Strict mathematical definitions of various metrics (AUC / Top-k / MRR, etc.);
-- Calculation rules and configuration methods for composite scores `Score_diag` / `Score_total`.
+This README aims to provide **users (especially clinicians)** with a quick guide to understanding and operating this evaluation benchmark.
 
 ---
 
 ## 1. Directory Structure and Roles
 
 ```text
-Code/
+CARDIOVASCBENCH/
 ├── config/
-│   ├── eval_llm_api.yml          # API config for the LLM under evaluation
 │   ├── paths.yml                 # All path information
 │   └── weights.yml               # Metric weight information
 ├── data/
 │   ├── source_data/              # Real cardiology data and conversion scripts
 │   ├── llm_eval_data/            # Benchmark evaluation data (eval/test)
-│   └── llms_answers_data_generator.py # Script to generate model answers
+│   ├── llms_answers_data_generator.py # Script to generate model answers
+│   └── run_answers.sh
 ├── src/
 │   ├── core_evaluator.py         # Core evaluation algorithms (normalization / matching / metrics)
 │   └── evaluate_llm.py           # Evaluate the LLM (reads config, invokes core_evaluator)
-├── agent/                        # [New] Medical Graph RAG Agent module (FastAPI service)
+├── agent/                        # Graph RAG Agent module (FastAPI service)
 ├── requirements.txt              # Project dependencies
 └── results/
     └── llms_evaluation_results/  # [Output] LLM evaluation results (JSON / PNG / CSV)
+    
 ```
 
 ---
@@ -47,8 +43,6 @@ Code/
 pip install -r requirements.txt
 ```
 
-If using the default semantic similarity model (SapBERT), newer versions of `torch` and `transformers` are required, along with an available GPU (otherwise it automatically falls back to CPU / character-level similarity).
-
 ### 2.2 Configuration Overview
 
 All paths, weights, and model-related parameters **must** be read from `config/`; hardcoding in the code is not allowed:
@@ -57,134 +51,74 @@ All paths, weights, and model-related parameters **must** be read from `config/`
 - `config/weights.yml`: Weights for each metric and total score coefficients;
 - `config/eval_llm_api.yml`: Meta-information like API URL or model name (used for recording during evaluation).
 
-Example (simplified):
-
-```yaml
-# config/paths.yml
-llm_eval4_data_paths:
-  final_diagnosis_eval: data/llm_eval_data/eval_data/private_diagnosis_eval.json
-
-llms_answers_data_base_dir: data/llms_answers_data
-
-output_paths:
-  llms_evaluation_results: results/llms_evaluation_results
-```
-
-```yaml
-# config/weights.yml
-gamma: 1.0   # Total score scaling factor: Score_total = gamma * Score_diag
-
-# Diagnostic task composite score: Score_diag = c1 * Top3 + c2 * AUC + c3 * MRR
-c1: 0.00     # Accuracy (Top-1) weight
-c2: 1.00     # F1-score weight
-c3: 0.00     # User-defined score (weighted_semantic_mean) weight
-```
-
 ---
 
-## 3. Evaluation Workflow (Data Flow and Execution)
+## 3. Evaluation Workflow and Running
 
-The overall process is divided into three steps:
+The evaluation is divided into the following three steps:
 
-1. **Build Evaluation Set**: Generated from real medical records / ECG data in `data/source_data/` via cleaning scripts into `llm_eval_data/eval_data/*.json`;
-2. **Generate Model Answers**: Call various models to generate "final diagnosis" candidate lists for evaluation samples, saved to `data/llms_answers_data/<model_name>/final_diagnosis_pred.json`;
-3. **Offline Evaluation**: Run `src/evaluate_llm.py`, which reads the gold standard and model answers, calls `core_evaluator.py` to calculate various metrics and total scores, and outputs JSON / charts / debug CSVs.
+1.  **Build Evaluation Set**: Generate JSON files for evaluation from original medical record data.
+2.  **Generate Model Answers**: Call large models to generate diagnostic prediction results based on evaluation set samples.
+3.  **Offline Evaluation**: Run the evaluation script to calculate model scores and generate reports.
 
 ### 3.1 Quick Start (Scenarios with pre-generated answers)
 
+If you already have answers generated by a model, you can directly run the evaluation script:
+
 ```bash
-cd Code
-
-# Generate answers for a model (example)
-# Defaults to --model-cfg config/eval_llm_api.yml --paths-cfg config/paths.yml
-python data/llms_answers_data_generator.py
-
-# Evaluate a single model (default strategy=semantic, auc_alias=pr)
+# Evaluate a single model
 python src/evaluate_llm.py --models your-model-name
 
 # Or evaluate multiple models at once (comma-separated)
 python src/evaluate_llm.py --models Apollo-72B,qwen3
 ```
 
-The script will:
+The script will automatically read configurations from `config/paths.yml` and `config/weights.yml`.
 
-- Read from `paths.yml`:
-  - `llm_eval4_data_paths.final_diagnosis_eval`: Evaluation JSON (Gold Standard);
-  - `llms_answers_data_base_dir`: Base directory for model answers;
-  - `output_paths.llms_evaluation_results`: Output directory for results;
-- Read from `weights.yml`:
-  - `gamma, c1, c2, c3`: Composite score weighting and scaling;
-- Read from `eval_llm_api.yml`:
-  - `model_name, api_url`, etc., for writing into the result JSON.
+### 3.2 Generate Answers for a Single Model (Run Python script directly)
 
-Output results mainly include:
+If you don't use `run_answers.sh` and run directly:
 
-- `results/llms_evaluation_results/llm_evaluation_metrics_<model>-<strategy>.json`
-- `results/llms_evaluation_results/figures_<model>-<strategy>/*.png`
-- `results/llms_evaluation_results/debug_evaluation_<model>-<strategy>_*.csv`
+```bash
+API_URL=<placeholder> API_KEY=<placeholder> \
+python data/llms_answers_data_generator.py \
+  --model-cfg config/llm_tpl_config/<model>.yml \
+  --paths-cfg config/paths.yml
+```
+
+You need to prepare and modify the following content:
+
+1.  **Environment Variables** (Required)
+    - `API_URL`: Base address of the OpenAI compatible service.
+    - `API_KEY`: Access key.
+
+2.  **Model Configuration** (Required)
+    - Use `--model-cfg` to point to a single model's YAML, for example:
+      - `config/llm_tpl_config/qwen2.5-7b-instruct.yml`
+    - This file determines the model's name, API type, and call parameters.
+
+3.  **Path Configuration** (Required)
+    - Use `--paths-cfg` to point to `config/paths.yml`.
+    - Ensure the evaluation input data and output answer paths are correctly configured.
+
+> Note: If paths in `paths.yml` are relative paths, execute commands in the project root directory to ensure relative paths take effect.
 
 ---
 
-## 4. Matching and Normalization Algorithm (core_evaluator)
+## 4. Interpretation of Evaluation Results
 
-### 4.1 Text Normalization `_normalize`
+The evaluation results mainly include the following types of files:
 
-The `_normalize(s: str)` function is responsible for lightweight normalization of diagnostic text:
+-   **JSON Report**: `results/llms_evaluation_results/llm_evaluation_metrics_<model>-<strategy>.json`
+    -   Includes `summary_scores.Score_total` (total score) and detailed `ranked_multi_diag` (multi-diagnosis ranking metrics, main reference) and `combined` (compatible with old metrics, for reference only) results.
+-   **Charts**: `results/llms_evaluation_results/figures_<model>-<strategy>/*.png`
+    -   For example, `topk_accuracy_bar_*.png`, showing Top-k accuracy.
+-   **Debug CSV**: `results/llms_evaluation_results/debug_evaluation_<model>-<strategy>_*.csv`
+    -   Provides detailed matching scores and labels for each sample for in-depth analysis.
 
-- Trimming leading/trailing whitespace;
-- Unifying Chinese/English parentheses, commas, and semicolons (e.g., `（`→`(`);
-- Removing trailing punctuation like periods or exclamation marks;
-- Merging consecutive whitespaces.
+### 4.1 Composite Score `Score_total`
 
-The normalized string then enters the subsequent matching and similarity calculation process.
-
-### 4.2 Semantic Similarity: SapBERT + Character-level Fallback
-
-Logic of the core function `semantic_similarity(a, b)`:
-
-1. Take the "core part" (before parentheses) of the normalized `a` and `b` as the text;
-2. Call `_embed(text)` using the SapBERT model:
-   - Model: `cambridgeltl/SapBERT-UMLS-2020AB-all-lang-from-XLMR`;
-   - Uses `[CLS]` vector and performs L2 normalization;
-   - Uses cosine similarity `_cosine(a, b)` for the score;
-3. If embedding fails to load (e.g., no GPU / network issues), it falls back to:
-   - If normalized strings match or core parts match: similarity set to 1.0;
-   - Otherwise, use `_lexical_overlap` (character overlap based on 2-grams);
-4. Final similarity is clipped to the `[0, 1]` range.
-
-### 4.3 Semantic / Layered Matching Labels `match_score`
-
-Core interface (simplified signature):
-
-```python
-match_score(pred: str, gold: str, icd_name: Optional[str] = None, strategy: str = "semantic") -> Tuple[float, str]
-```
-
-#### 4.3.1 semantic Strategy
-
-- Calculation:
-  - `s_gold = semantic_similarity(pred, gold)`
-  - `s_icd = semantic_similarity(pred, icd_name)` (if ICD name exists)
-  - `s = max(s_gold, s_icd)`
-- If `s >= SEM_POS` (default 0.80), returns `(s, "semantic")`; otherwise `(s, "negative")`.
-- Only provides a binary label: "semantic hit" or not.
-
-#### 4.3.2 layered Strategy
-
-Layered labels refine the intensity of "approximate hits":
-
-1. **exact**: Normalized `pred` matches `gold` (or ICD name) exactly, score 1.0;
-2. **core**: Core parts (before parentheses) match (e.g., "Myocardial Infarction(Acute)" → "Myocardial Infarction"), score 0.95;
-3. **keyword / partial_keyword**:
-   - Uses `_extract_keywords` to extract keywords from the diagnosis (excluding weak words like "disease", "type", "acute", etc.);
-   - Calculates keyword overlap rate with gold / ICD names:
-     - ≥ 0.6: Label `"keyword"`, score approx. 0.8~0.95;
-     - ∈ [0.4, 0.6): Label `"partial_keyword"`, score approx. 0.68~0.8;
-4. **Semantic Levels**:
-   - Calculates semantic similarity `s`;
-   - If `s >= SEM_STRICT` (default 0.90): `"semantic_strict"`;
-   - If `s >= SEM_LOOSE` (default 0.75): `"semantic_loose"`;
-   - Otherwise `"negative"`.
+`Score_total` is the final comprehensive score of the model. A higher score indicates better model performance. This score **emphasizes the ranking quality of diagnoses** during calculation, which is highly consistent with clinicians' practice of prioritizing the primary diagnosis and then listing secondary diagnoses in actual diagnosis.
 
 ---
 
@@ -192,77 +126,46 @@ Layered labels refine the intensity of "approximate hits":
 
 ### 5.1 Ranked Multi-Diagnosis Metrics
 
-When a case has multiple correct diagnoses (e.g., Atrial Fibrillation, Heart Failure, Hypertension), we use standard Information Retrieval metrics.
+When a case has multiple correct diagnoses (e.g., Atrial Fibrillation, Heart Failure, Hypertension), we use standard Information Retrieval metrics to evaluate the model-generated diagnosis list.
 
 #### 5.1.1 nDCG@K (Normalized Discounted Cumulative Gain)
 Measures ranking quality. Requires not just correct predictions, but also that correct diagnoses are ranked higher.
 
 - **Gain**: `rel_score * _gt_exp_weight(gt_rank)`
   - `rel_score`: Semantic similarity between prediction and gold standard (0~1).
-  - `_gt_exp_weight(rank)`: GT importance weight using exponential decay `exp(-lambda * (rank - 1))`, default `lambda=0.7`. Rank starts from 1 (the primary diagnosis has the highest weight).
+  - `_gt_exp_weight(rank)`: GT importance weight, using exponential decay. Where rank is the ranking in the gold standard list (starting from 1), the primary diagnosis has the highest weight.
 - **Discount**: `_pos_discount(pred_pos)`
-  - `_pos_discount(pos)`: Predicted position discount using standard DCG discount `1 / log2(pos + 1.0)`. Correct answers ranked lower receive a lower discount score.
+  - `_pos_discount(pos)`: Predicted position discount, using standard DCG discount. The lower the model ranks the correct answer, the lower the score.
 
 #### 5.1.2 PrimaryHit@K
-Measures whether the model hit the "Primary Diagnosis" (the first item in the gold standard list).
+Measures whether the model hit the "Primary Diagnosis".
 
 #### 5.1.3 Precision@K & Recall@K
 - **Precision@K**: How many of the top K predictions are correct.
 - **Recall@K**: How many of the gold standard diagnoses were retrieved.
 
-#### 5.1.4 Final Score
+#### 5.1.4 Final Score (Comprehensive Score)
 A comprehensive score combining ranking quality, primary diagnosis hit rate, and precision:
 
-```text
-FinalScore = nDCG * (0.7 + 0.3 * PrimaryHit) * (Precision ^ beta)
-```
+### 5.2 Single Diagnosis Best Match Metrics (Best-Match / Combined)
+
+Only focuses on whether the model "touches" any diagnosis in the gold standard (typically used for compatibility with old metrics).
+
+- **Top-k Accuracy**: Whether the top k predictions contain the correct answer.
+- **MRR (Mean Reciprocal Rank)**: The reciprocal of the rank of the first correct answer.
+- **Weighted Semantic Mean**: The weighted average of semantic similarity of all predictions.
 
 ---
 
-## 6. Composite Scoring: Score_diag and Score_total
-
-### 6.1 Score_diag (Diagnostic Task Composite Score)
-
-Calculation function: `summarize_diag_metrics`.
-
-**Priority Logic**:
-If Ranked Multi-Diagnosis `final_score` is provided, use it directly:
-```python
-Score_diag = metrics["final_score"]
-```
-
-### 6.2 Score_total (Total Score)
-
-Calculated from `weights.yml` using the scaling factor `gamma`:
-```text
-Score_total = gamma * Score_diag
-```
-
----
-
-## 7. Result File Structure
-
-### 7.1 JSON: `llm_evaluation_metrics_<model>-<strategy>.json`
-Detailed metrics including `ranked_multi_diag` (preferred reference) and `combined` (legacy compatibility).
-
-### 7.2 Debug CSV: `debug_evaluation_<model>-<strategy>_*.csv`
-Generated in three versions:
-- `<strategy>.csv`: Max of Gold vs. ICD matching;
-- `<strategy>_gold.csv`: Matching against original diagnosis names only;
-- `<strategy>_icd.csv`: Matching against ICD names only.
-
----
-
-## Medical Graph RAG Agent (agent/)
+## 6. Medical Graph RAG Agent
 
 This module provides Medical Knowledge Graph RAG capabilities based on **Neo4j + Vector Retrieval**, supporting an OpenAI-compatible interface.
 
-### 8.1 Core Features
+### 6.1 Core Features
 - **OpenAI Compatible**: Seamless integration via `POST /v1/chat/completions`.
 - **Hybrid Retrieval**: Parallel execution of vector similarity retrieval and Cypher graph retrieval (`mode=hybrid`).
 - **Automated Graph Building**: Interfaces to automatically split Markdown text and extract entities/relationships into Neo4j.
 
-### 8.2 Quick Start
 ```bash
 cd agent
 pip install -r requirements.txt
@@ -270,9 +173,9 @@ python server.py
 ```
 Default URL: `http://127.0.0.1:8801`, health check: `/api/health`.
 
-### 8.3 Main Endpoints
+### 6.2 Main Endpoints
 - `POST /v1/chat/completions`: RAG Q&A (OpenAI format).
 - `POST /api/query`: Custom retrieval Q&A.
 - `POST /api/admin/ingest`: Document ingestion (graph building and vectorization).
 
-For more details, please refer to [agent/README.md](file:///e:/mychen/CVDBenchmark-OpenSource/Code/agent/README.md).
+For more details, please refer to [agent/README.md](./agent/README.md).
