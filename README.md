@@ -15,13 +15,13 @@
 ```text
 CARDIOVASCBENCH/
 ├── config/
+│   ├── eval_llm_api.yml          # 评估模型参数
 │   ├── paths.yml                 # 所有路径信息
 │   └── weights.yml               # 指标权重信息
 ├── data/
 │   ├── source_data/              # 真实心内科数据与转换脚本
 │   ├── llm_eval_data/            # 基准评估数据（eval/test）
-│   ├── llms_answers_data_generator.py # 生成模型答案的脚本
-│   └── run_answers.sh
+│   └── llms_answers_data_generator.py # 生成模型答案的脚本
 ├── src/
 │   ├── core_evaluator.py         # 核心评测算法（归一化 / 匹配 / 各类指标）
 │   └── evaluate_llm.py           # 评估待测 LLM（读取配置，脚本调度）
@@ -44,13 +44,18 @@ CARDIOVASCBENCH/
 ```bash
 pip install -r requirements.txt
 ```
+
+- `torch` 可能需要根据你的运行环境选择安装方式；如果使用 GPU，建议按 PyTorch 官方说明选择匹配的 CUDA 版本安装。
+- `src/core_evaluator.py` 默认使用 SapBERT 模型 `cambridgeltl/SapBERT-UMLS-2020AB-all-lang-from-XLMR` 做语义匹配。首次运行时，`transformers` 会尝试联网从 Hugging Face 下载模型文件，因此需要可访问外网。
+- SapBERT 模型地址：[`cambridgeltl/SapBERT-UMLS-2020AB-all-lang-from-XLMR`](https://huggingface.co/cambridgeltl/SapBERT-UMLS-2020AB-all-lang-from-XLMR)
+- 如果当前环境无法联网，可以先在有网络的机器手动下载该模型，再拷贝到本地服务器；随后将 `src/core_evaluator.py` 中的模型名替换为本地目录，或提前放入 Hugging Face 缓存目录后再运行。
+
 ### 2.2 配置文件总览
 
 所有路径、权重与模型相关参数**必须**从 `config/` 读取，不允许在代码中硬编码：
 
 - `config/paths.yml`：数据 / 答案 / 结果路径；
 - `config/weights.yml`：各指标权重与总分系数；
-- `config/eval_llm_api.yml`：API 或模型名称等元信息（评估阶段只用于记录）。
 
 ---
 
@@ -76,33 +81,53 @@ python src/evaluate_llm.py --models Apollo-72B,qwen3
 
 脚本会自动读取 `config/paths.yml` 和 `config/weights.yml` 中的配置。
 
-### 3.2 只生成一个模型的答案（直接运行 Python 脚本）
+### 3.2 生成模型答案
 
-如果你不使用 `run_answers.sh`，而是直接运行：
+当前版本的 `data/llms_answers_data_generator.py` 默认直接读取：
+
+- `config/eval_llm_api.yml`：API 地址、密钥、模型名与全部请求参数；
+- `config/paths.yml`：评测输入路径与答案输出目录。
+
+最简单的运行方式是：
 
 ```bash
-API_URL=<placeholder> API_KEY=<placeholder> \
+python data/llms_answers_data_generator.py
+```
+
+如需显式指定配置文件，也可以运行：
+
+```bash
 python data/llms_answers_data_generator.py \
-  --model-cfg config/llm_tpl_config/<model>.yml \
+  --model-cfg config/eval_llm_api.yml \
   --paths-cfg config/paths.yml
 ```
 
-你需要准备与修改的内容如下：
+运行前请先修改 `config/eval_llm_api.yml`。该文件至少需要配置：
 
-1.  **环境变量**（必需）  
-    - `API_URL`：OpenAI 兼容服务的基础地址。  
-    - `API_KEY`：访问密钥。  
+1.  **API 信息**
+    - `api_url`：OpenAI 兼容服务地址。可填写基础地址，也可填写完整接口地址；脚本会自动归一化。
+    - `api_key`：访问密钥。
 
-2.  **模型配置**（必需）  
-    - 使用 `--model-cfg` 指向单个模型的 YAML，例如：
-      - `config/llm_tpl_config/qwen2.5-7b-instruct.yml`
-    - 该文件决定模型的名称、API 类型和调用参数。
+2.  **模型与请求参数**
+    - `model_name`：模型名称。
+    - `endpoint`：`chat` 或 `completions`。
+    - `use_client_templates`：是否在本地把 `messages` 渲染成 `prompt`。
+    - `supports_system_role`：服务端是否支持 `system` 角色。
+    - `json_mode`、`stops`、`max_tokens`、`token_param`、`temperature`、`timeout_seconds`、`max_retries`、`backoff_seconds`、`template`。
 
-3.  **路径配置**（必需）  
-    - 使用 `--paths-cfg` 指向 `config/paths.yml`。  
-    - 确保评测输入数据和输出答案的路径配置正确。  
+3.  **路径配置**
+    - `config/paths.yml` 中的 `llm_eval4_data_paths.final_diagnosis_eval`：评测输入文件。
+    - `config/paths.yml` 中的 `llms_answers_data_base_dir`：答案输出根目录。
 
-> 注意：`paths.yml` 中的路径若为相对路径，需在项目根目录执行命令，确保相对路径生效。
+脚本会先做一次 `/v1/models` 连通性检查；通过后逐条生成结果，并输出到：
+
+```text
+data/llms_answers_data/<model_name>/final_diagnosis_pred.json
+```
+
+同时会在同目录记录错误日志 `api_errors.log`。
+
+> 注意：`paths.yml` 中若使用相对路径，请在项目根目录执行命令。
 
 ---
 

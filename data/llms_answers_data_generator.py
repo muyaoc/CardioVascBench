@@ -50,12 +50,16 @@ def normalize_base_url(u: str) -> str:
       - http://host:port/
       - http://host:port/v1
       - http://host:port/v1/
+      - http://host:port/v1/chat/completions
+      - http://host:port/v1/completions
     and we always store:
       - http://host:port
     """
     u = (u or "").strip().rstrip("/")
-    if u.endswith("/v1"):
-        u = u[:-3]
+    for suffix in ("/v1/chat/completions", "/chat/completions", "/v1/completions", "/completions", "/v1"):
+        if u.endswith(suffix):
+            u = u[: -len(suffix)]
+            break
     return u
 
 
@@ -653,14 +657,14 @@ def main() -> None:
     ap.add_argument("--paths-cfg", default="config/paths.yml", required=False, help="Path to paths.yml (default: %(default)s)")
     args = ap.parse_args()
 
-    # API from environment (set by the .sh)
-    api_url = normalize_base_url(os.getenv("API_URL", ""))
-    api_key = (os.getenv("API_KEY", "") or "").strip()
-    if not api_url or not api_key:
-        raise SystemExit("Missing API_URL/API_KEY env vars (export them in your .sh).")
-
     mcfg = read_yaml(args.model_cfg)
     pcfg = read_yaml(args.paths_cfg)
+
+    # API credentials and model runtime options are all read from eval_llm_api.yml
+    api_url = normalize_base_url(str(mcfg.get("api_url") or ""))
+    api_key = (str(mcfg.get("api_key") or "")).strip()
+    if not api_url or not api_key:
+        raise SystemExit("Missing api_url/api_key in eval_llm_api.yml.")
 
     model_name = mcfg.get("model_name", "model")
     endpoint = (mcfg.get("endpoint") or "completions").lower()  # "completions" or "chat"
@@ -678,8 +682,8 @@ def main() -> None:
 
     template = (mcfg.get("template") or "").strip()
 
-    diag_eval_path = pcfg.get("final_diagnosis_eval")
-    print(diag_eval_path)
+    eval_paths = pcfg.get("llm_eval4_data_paths", {}) or {}
+    diag_eval_path = eval_paths.get("final_diagnosis_eval") or pcfg.get("final_diagnosis_eval")
     if not diag_eval_path or not os.path.exists(diag_eval_path):
         raise SystemExit("Missing final_diagnosis_eval path or file does not exist in paths.yml.")
 

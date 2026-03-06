@@ -1,6 +1,14 @@
-# Core dependencies
+# Core configuration / API
 PyYAML>=6.0
 requests>=2.31
+
+# Evaluation and plotting
+matplotlib>=3.7
+
+# Semantic matching model
+numpy>=1.24
+torch>=2.1
+transformers>=4.40
 
 # Data conversion utility (用于 Excel -> JSON 转换脚本)
 pandas>=2.0

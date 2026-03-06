@@ -264,8 +264,6 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--strategy", choices=["semantic", "layered"], default="semantic",
                         help="evaluation strategy for match_score (default: semantic)")
-    parser.add_argument("--auc-alias", choices=["pr", "soft"], default="pr",
-                        help="which value to mirror into 'auc' field in JSON: pr=PR-AUC by score, soft=pairwise Soft-AUC (default: pr)")
     parser.add_argument("--models", type=str, default=None,
                         help="Comma-separated list of model names to evaluate. Use 'all' to process all models in the answers directory.")
     args = parser.parse_args()

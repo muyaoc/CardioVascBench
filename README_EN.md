@@ -13,13 +13,13 @@ This README aims to provide **users (especially clinicians)** with a quick guide
 ```text
 CARDIOVASCBENCH/
 ├── config/
+│   ├── eval_llm_api.yml          # model api/config
 │   ├── paths.yml                 # All path information
 │   └── weights.yml               # Metric weight information
 ├── data/
 │   ├── source_data/              # Real cardiology data and conversion scripts
 │   ├── llm_eval_data/            # Benchmark evaluation data (eval/test)
-│   ├── llms_answers_data_generator.py # Script to generate model answers
-│   └── run_answers.sh
+│   └── llms_answers_data_generator.py # Script to generate model answers
 ├── src/
 │   ├── core_evaluator.py         # Core evaluation algorithms (normalization / matching / metrics)
 │   └── evaluate_llm.py           # Evaluate the LLM (reads config, invokes core_evaluator)
@@ -43,13 +43,17 @@ CARDIOVASCBENCH/
 pip install -r requirements.txt
 ```
 
+- `torch` may need to be installed differently depending on your environment; if you use GPU inference, install the build that matches your CUDA version following the official PyTorch instructions.
+- `src/core_evaluator.py` uses the SapBERT model `cambridgeltl/SapBERT-UMLS-2020AB-all-lang-from-XLMR` for semantic matching. On first run, `transformers` will try to download the model from Hugging Face, so outbound network access is required.
+- SapBERT model page: [`cambridgeltl/SapBERT-UMLS-2020AB-all-lang-from-XLMR`](https://huggingface.co/cambridgeltl/SapBERT-UMLS-2020AB-all-lang-from-XLMR)
+- If your environment is offline, you can download the model on a machine with internet access, copy it to the target server, and then either replace the model name in `src/core_evaluator.py` with the local directory path or place the files into the local Hugging Face cache before running.
+
 ### 2.2 Configuration Overview
 
 All paths, weights, and model-related parameters **must** be read from `config/`; hardcoding in the code is not allowed:
 
 - `config/paths.yml`: Paths for data / answers / results;
 - `config/weights.yml`: Weights for each metric and total score coefficients;
-- `config/eval_llm_api.yml`: Meta-information like API URL or model name (used for recording during evaluation).
 
 ---
 
@@ -75,33 +79,53 @@ python src/evaluate_llm.py --models Apollo-72B,qwen3
 
 The script will automatically read configurations from `config/paths.yml` and `config/weights.yml`.
 
-### 3.2 Generate Answers for a Single Model (Run Python script directly)
+### 3.2 Generate Model Answers
 
-If you don't use `run_answers.sh` and run directly:
+The current `data/llms_answers_data_generator.py` reads configuration directly from:
+
+- `config/eval_llm_api.yml`: API endpoint, API key, model name, and all request parameters;
+- `config/paths.yml`: evaluation input path and answer output directory.
+
+The simplest way to run it is:
 
 ```bash
-API_URL=<placeholder> API_KEY=<placeholder> \
+python data/llms_answers_data_generator.py
+```
+
+If you want to pass the config files explicitly, run:
+
+```bash
 python data/llms_answers_data_generator.py \
-  --model-cfg config/llm_tpl_config/<model>.yml \
+  --model-cfg config/eval_llm_api.yml \
   --paths-cfg config/paths.yml
 ```
 
-You need to prepare and modify the following content:
+Before running, update `config/eval_llm_api.yml`. At minimum, it should contain:
 
-1.  **Environment Variables** (Required)
-    - `API_URL`: Base address of the OpenAI compatible service.
-    - `API_KEY`: Access key.
+1.  **API Settings**
+    - `api_url`: OpenAI-compatible service URL. It can be either a base URL or a full endpoint URL; the script normalizes it automatically.
+    - `api_key`: Access key.
 
-2.  **Model Configuration** (Required)
-    - Use `--model-cfg` to point to a single model's YAML, for example:
-      - `config/llm_tpl_config/qwen2.5-7b-instruct.yml`
-    - This file determines the model's name, API type, and call parameters.
+2.  **Model and Request Parameters**
+    - `model_name`: Model identifier.
+    - `endpoint`: `chat` or `completions`.
+    - `use_client_templates`: Whether to render `messages` into a single `prompt` locally.
+    - `supports_system_role`: Whether the server supports the `system` role.
+    - `json_mode`, `stops`, `max_tokens`, `token_param`, `temperature`, `timeout_seconds`, `max_retries`, `backoff_seconds`, and `template`.
 
-3.  **Path Configuration** (Required)
-    - Use `--paths-cfg` to point to `config/paths.yml`.
-    - Ensure the evaluation input data and output answer paths are correctly configured.
+3.  **Path Settings**
+    - `llm_eval4_data_paths.final_diagnosis_eval` in `config/paths.yml`: the evaluation input file.
+    - `llms_answers_data_base_dir` in `config/paths.yml`: the root output directory for model answers.
 
-> Note: If paths in `paths.yml` are relative paths, execute commands in the project root directory to ensure relative paths take effect.
+The script first performs a `/v1/models` connectivity check, then generates predictions sample by sample, and writes the result to:
+
+```text
+data/llms_answers_data/<model_name>/final_diagnosis_pred.json
+```
+
+It also writes request and parsing failures to `api_errors.log` in the same directory.
+
+> Note: If `paths.yml` uses relative paths, run the command from the project root directory.
 
 ---
 
