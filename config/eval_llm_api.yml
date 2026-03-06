@@ -1,0 +1,21 @@
+# API and model runtime configuration examples
+api_url: "<placeholder>"
+api_key: "<placeholder>"
+model_name: "<placeholder>"
+
+endpoint: "completions"
+use_client_templates: true
+supports_system_role: true
+json_mode: true
+
+stops: []
+
+max_tokens: 512
+token_param: "max_tokens"
+temperature: 0.0
+timeout_seconds: 90
+max_retries: 3
+backoff_seconds: 1.0
+
+# Used only when endpoint == "completions" and use_client_templates == true.
+template: ""
