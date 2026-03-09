@@ -4,7 +4,7 @@
 
 面向心脑血管疾病场景的中文评测基准。依据真实心内科数据构建评估集，评估待测大语言模型的“最终诊断”能力与一致性。
 
-**数据下载 (Data Download)**：[CardioVascBench 数据集 (OpenI 启智社区)](https://openi.pcl.ac.cn/explore/datasets/cindyc/CardioVascBench)
+**数据下载 (Data Download)**：[CardioVascBench 数据集 (OpenI 启智社区)](https://openi.pcl.ac.cn/datasets/detail/cindyc/CardioVascBench)
 
 本 README 旨在为**用户（尤其是临床医生）**提供快速了解和操作本评测基准的指南。
 

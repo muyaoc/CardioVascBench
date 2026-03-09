@@ -2,7 +2,7 @@
 
 A Chinese evaluation benchmark oriented towards cardiovascular disease scenarios. Built on real cardiology data, it evaluates the "final diagnosis" capability and consistency of Large Language Models (LLMs).
 
-**Data Download**: [CardioVascBench Dataset (OpenI)](https://openi.pcl.ac.cn/explore/datasets/cindyc/CardioVascBench)
+**Data Download**: [CardioVascBench Dataset (OpenI)](https://openi.pcl.ac.cn/datasets/detail/cindyc/CardioVascBench)
 
 This README aims to provide **users (especially clinicians)** with a quick guide to understanding and operating this evaluation benchmark.
 
